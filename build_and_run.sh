@@ -13,7 +13,8 @@ function display_help() {
     printf "%-16s\n" "build: Builds the project and runs the Simulator"
     printf "%-16s\n" "run  : Skips building the project and runs the Simulator"
     printf "\n"
-    printf "%s\n\n" "Set NOCOLOR=1 to disable terminal coloring"
+    printf "%s\n" "Set NOCOLOR=1 to disable terminal coloring"
+    printf "%s\n\n" "Set NOINCREMENT=1 to disable auto-incrementing PDX build number"
     exit 0
 }
 
@@ -45,6 +46,21 @@ function log_warn() {
 }
 function log_err() {
     printf "%s\n  >> %s\n" "${RED}!! ERROR !!" "$1${RST}"
+}
+
+function increment_build_number() {
+    if [[ -f 'source/pdxinfo' ]]; then
+        if [[ $NOINCREMENT != 1 ]]; then
+            log "Incrementing build number in pdxinfo..."
+            current_build=$(grep "buildNumber" 'source/pdxinfo' | awk -F "=" '{print $2}')
+            new_build=$((current_build + 1))
+            sed -i -E "s/^(buildNumber=)(.*)$/\1$new_build/g" source/pdxinfo
+        else
+            log_warn "Not incrementing build number in pdxinfo!"
+        fi
+    else
+        log_warn "Metadata file pdxinfo not found!"
+    fi
 }
 
 function check_pdxinfo() {
@@ -132,6 +148,7 @@ if [[ $BUILD == 1 ]]; then
     make_build_dir
     clean_build_dir
     check_pdxinfo
+    increment_build_number
     build_pdx
     check_close_sim
     run_pdx
